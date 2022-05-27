@@ -21,6 +21,7 @@ async function run() {
         const productsCollection = client.db('HeroPaintTools').collection('products');
         const ordersCollection = client.db('HeroPaintTools').collection('orders');
         const reviewCollection = client.db('HeroPaintTools').collection('review');
+        const userCollection = client.db('HeroPaintTools').collection('user');
 
         // server api 
         app.get('/products', async (req, res) => {
@@ -28,6 +29,18 @@ async function run() {
             const cursor = productsCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
+        });
+
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user,
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send({ result, token });
         });
 
         app.get('/orders', async (req, res) => {
