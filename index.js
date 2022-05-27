@@ -19,6 +19,7 @@ async function run() {
     try {
         await client.connect();
         const productsCollection = client.db('HeroPaintTools').collection('products');
+        const ordersCollection = client.db('HeroPaintTools').collection('orders');
 
         // server api 
         app.get('/products', async (req, res) => {
@@ -27,12 +28,21 @@ async function run() {
             const products = await cursor.toArray();
             res.send(products);
         });
+
+
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const products = await productsCollection.findOne(query);
             res.send(products);
         });
+
+        //POST 
+        app.post('/orders', async (req, res) => {
+            const newOrder = req.body;
+            const result = await ordersCollection.insertOne(newOrder);
+            res.send(result)
+        })
 
     }
     finally {
