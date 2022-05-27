@@ -20,6 +20,7 @@ async function run() {
         await client.connect();
         const productsCollection = client.db('HeroPaintTools').collection('products');
         const ordersCollection = client.db('HeroPaintTools').collection('orders');
+        const reviewCollection = client.db('HeroPaintTools').collection('review');
 
         // server api 
         app.get('/products', async (req, res) => {
@@ -35,6 +36,12 @@ async function run() {
             const orders = await cursor.toArray();
             res.send(orders);
         });
+        app.get('/review', async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const orders = await cursor.toArray();
+            res.send(orders);
+        });
 
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
@@ -47,6 +54,11 @@ async function run() {
         app.post('/orders', async (req, res) => {
             const newOrder = req.body;
             const result = await ordersCollection.insertOne(newOrder);
+            res.send(result)
+        })
+        app.post('/review', async (req, res) => {
+            const newOrder = req.body;
+            const result = await reviewCollection.insertOne(newOrder);
             res.send(result)
         })
         app.post('/products', async (req, res) => {
