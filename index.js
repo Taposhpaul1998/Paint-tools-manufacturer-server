@@ -29,6 +29,12 @@ async function run() {
             res.send(products);
         });
 
+        app.get('/orders', async (req, res) => {
+            const query = {};
+            const cursor = ordersCollection.find(query);
+            const orders = await cursor.toArray();
+            res.send(orders);
+        });
 
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
