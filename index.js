@@ -80,6 +80,13 @@ async function run() {
             res.send({ result, token });
         });
 
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const cursor = userCollection.find(query);
+            const users = await cursor.toArray();
+            res.send(users);
+        });
         app.get('/user', verifyJWt, async (req, res) => {
             const users = await userCollection.find().toArray();
             res.send(users);
