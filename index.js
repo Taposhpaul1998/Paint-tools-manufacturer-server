@@ -12,8 +12,26 @@ app.use(cors());
 app.use(express.json());
 
 
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xwtrt.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+function veriguJWt(req, res, next) {
+    const authHedar = req.headers.authorization;
+    if (!authHedar) {
+        return res.status(401).send({ message: 'unauthorizd access' })
+    }
+    const token = authHedar.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode) => {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decode = decode;
+    })
+
+    next();
+}
+
 
 async function run() {
     try {
@@ -40,11 +58,18 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
             res.send({ result, token });
         });
 
-        app.get('/orders', async (req, res) => {
-            const query = {};
+        app.get('/user', async (req, res) => {
+            const users = await userCollection.find().toArray();
+            res.send(users);
+        });
+
+        app.get('/orders', veriguJWt, async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
             const cursor = ordersCollection.find(query);
             const orders = await cursor.toArray();
             res.send(orders);
