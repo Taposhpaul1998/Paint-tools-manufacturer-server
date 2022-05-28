@@ -16,7 +16,7 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xwtrt.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-function veriguJWt(req, res, next) {
+function verifyJWt(req, res, next) {
     const authHedar = req.headers.authorization;
     if (!authHedar) {
         return res.status(401).send({ message: 'unauthorizd access' })
@@ -41,6 +41,17 @@ async function run() {
         const reviewCollection = client.db('HeroPaintTools').collection('review');
         const userCollection = client.db('HeroPaintTools').collection('user');
 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+                next();
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' });
+            }
+        }
+
         // server api 
         app.get('/products', async (req, res) => {
             const query = {};
@@ -48,6 +59,23 @@ async function run() {
             const products = await cursor.toArray();
             res.send(products);
         });
+
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user.role === 'admin';
+            res.send({ admin: isAdmin })
+        })
+
+        app.put('/user/admin/:email', verifyJWt, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
 
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
@@ -62,12 +90,12 @@ async function run() {
             res.send({ result, token });
         });
 
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyJWt, async (req, res) => {
             const users = await userCollection.find().toArray();
             res.send(users);
         });
 
-        app.get('/orders', veriguJWt, async (req, res) => {
+        app.get('/orders', verifyJWt, async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
             const cursor = ordersCollection.find(query);
