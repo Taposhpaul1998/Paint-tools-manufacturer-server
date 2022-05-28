@@ -41,16 +41,6 @@ async function run() {
         const reviewCollection = client.db('HeroPaintTools').collection('review');
         const userCollection = client.db('HeroPaintTools').collection('user');
 
-        const verifyAdmin = async (req, res, next) => {
-            const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({ email: requester });
-            if (requesterAccount.role === 'admin') {
-                next();
-            }
-            else {
-                res.status(403).send({ message: 'forbidden' });
-            }
-        }
 
         // server api 
         app.get('/products', async (req, res) => {
@@ -95,9 +85,8 @@ async function run() {
             res.send(users);
         });
 
-        app.get('/orders', verifyJWt, async (req, res) => {
-            const email = req.query.email;
-            const query = { email: email };
+        app.get('/orders', async (req, res) => {
+            const query = {};
             const cursor = ordersCollection.find(query);
             const orders = await cursor.toArray();
             res.send(orders);
@@ -138,6 +127,12 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await productsCollection.deleteOne(query);
+            res.send(result);
+        })
+        app.delete('/orders/:id', verifyJWt, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await ordersCollection.deleteOne(query);
             res.send(result);
         })
 
